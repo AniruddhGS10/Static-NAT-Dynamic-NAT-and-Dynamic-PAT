@@ -1,0 +1,108 @@
+R1!
+en
+conf t
+host R1
+int g 0/0
+ip add 10.1.1.10 255.255.255.0
+no shut
+ip nat inside
+
+int g0/1 
+ip add 11.1.1.1 255.255.255.252
+no shut
+ip nat outside
+
+ex
+ip route 0.0.0.0 0.0.0.0 11.1.1.2
+
+*Setup pool
+ip nat pool NAT_POOL 100.1.1.1 100.1.1.2 netmask 255.255.255.0
+
+*ACL
+access-list 1 permit 10.1.1.0 0.0.0.255
+
+*IP NAT Policy
+ip nat inside source list 1 pool NAT_POOL 
+
+do copy running-conf startup-conf
+------------------------------------------------------
+
+ISP!
+
+en
+conf t
+host ISP
+int g0/0
+ip add 11.1.1.2 255.255.255.252
+no shut
+
+int g0/1
+ip add 12.1.1.2 255.255.255.252 
+no shut
+
+int g0/2
+ip add 13.1.1.2 255.255.255.252
+
+ex
+ip route 100.1.1.0 255.255.255.0 11.1.1.1
+ip route 100.2.2.1 255.255.255.255 12.1.1.1
+ip route 100.3.3.0 255.255.255.0 13.1.1.1
+
+do write
+------------------------------------------------------
+
+
+R2!
+
+en
+conf t
+host R2
+
+int g0/0
+ip add 12.1.1.1 255.255.255.252
+no shut
+ip nat outside
+
+int g0/1
+ip add 10.2.2.10 255.255.255.0
+no shut
+ip nat inside 
+
+ex
+ip rote 11.1.1.1  255.255.255.0 12.1.1.2
+ip nat inside source static 10.2.2.1 100.2.2.1
+
+do write
+
+------------------------------------------------------
+
+R3!
+en
+conf t
+
+int g0/0
+ip add 10.3.3.10 255.255.255.0
+no shut
+ip nat inside
+
+int g0/1
+ip add 13.1.1.1 255.255.255.252
+no shut
+ip nat outside
+
+ex
+ip route 0.0.0.0 0.0.0.0 13.1.1.2
+
+*Setup pool
+ip nat pool PAT_POOL 100.3.3.1 100.3.3.2 netmask 255.255.255.0
+
+*ACL
+access-list 1 permit 10.3.3.0 0.0.0.255
+
+*IP NAT Policy
+ip nat inside source list 1 pool PAT_POOL overload
+------------------------------------------------------
+
+
+
+
